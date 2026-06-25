@@ -52,6 +52,29 @@ class PhotoJobDB(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
+class OrderDB(Base):
+    __tablename__ = "orders"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    photo_job_id: Mapped[str] = mapped_column(
+        ForeignKey("photo_jobs.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
+    delivery_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    amount_cents: Mapped[int] = mapped_column(nullable=False)
+    currency: Mapped[str] = mapped_column(String(8), nullable=False, default="usd")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    stripe_session_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 engine = create_async_engine(settings.database_url, future=True, pool_pre_ping=True)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 

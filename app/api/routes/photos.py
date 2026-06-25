@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
 from app.models.schemas import CreatePhotoJobRequest, JobStatus, PhotoJobResponse
+from app.services.orders import get_paid_order_for_job
 from app.services.photo_jobs import (
     create_photo_job,
     get_photo_job,
@@ -78,5 +79,13 @@ async def get_photo_file(
     file_path = path_map.get(file_type)
     if not file_path:
         raise HTTPException(status_code=404, detail="File not found")
+
+    if file_type == "processed":
+        paid_order = await get_paid_order_for_job(session, job_id)
+        if not paid_order:
+            raise HTTPException(
+                status_code=403,
+                detail="Payment required to download the full-resolution photo",
+            )
 
     return FileResponse(file_path, media_type="image/jpeg")

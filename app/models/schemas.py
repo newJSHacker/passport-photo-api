@@ -67,3 +67,42 @@ class PhotoJobResponse(BaseModel):
 
 class CreatePhotoJobRequest(BaseModel):
     document_id: str
+
+
+class CheckoutPricingOption(BaseModel):
+    id: str
+    title: str
+    description: str
+    amount_cents: int
+    currency: str
+
+
+class CheckoutPricingResponse(BaseModel):
+    options: list[CheckoutPricingOption]
+
+
+class CreateCheckoutSessionRequest(BaseModel):
+    photo_job_id: str
+    email: str = Field(min_length=3, max_length=255)
+    delivery_type: Literal["digital", "print"]
+    print_copies: Literal[2, 4, 6] | None = None
+    addons: list[Literal["expert_check", "photo_retouching"]] = Field(default_factory=list)
+
+
+class CreateCheckoutSessionResponse(BaseModel):
+    order_id: str
+    checkout_url: str
+    demo_mode: bool = False
+
+
+class OrderResponse(BaseModel):
+    id: str
+    photo_job_id: str
+    email: str
+    delivery_type: str
+    amount_cents: int
+    currency: str
+    status: str
+    created_at: str
+    paid_at: str | None = None
+    download_url: str | None = None

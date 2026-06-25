@@ -13,3 +13,4 @@ numpy>=1.26.0,<2
 sqlalchemy==2.0.41
 asyncpg==0.30.0
 alembic==1.16.4
+stripe==11.4.0
