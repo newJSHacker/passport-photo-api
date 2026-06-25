@@ -10,6 +10,7 @@ from app.models.schemas import (
 )
 from app.services.checkout import (
     create_checkout_session,
+    get_order_by_job_response,
     get_order_by_session_response,
     get_order_response,
     get_pricing,
@@ -45,6 +46,14 @@ async def get_order_endpoint(
     session: AsyncSession = Depends(get_session),
 ) -> OrderResponse:
     return await get_order_response(session, order_id)
+
+
+@router.get("/orders/by-job/{photo_job_id}", response_model=OrderResponse)
+async def get_order_by_job_endpoint(
+    photo_job_id: str,
+    session: AsyncSession = Depends(get_session),
+) -> OrderResponse:
+    return await get_order_by_job_response(session, photo_job_id)
 
 
 @router.get("/orders/by-session/{session_id}", response_model=OrderResponse)

@@ -93,6 +93,8 @@ class CreateCheckoutSessionResponse(BaseModel):
     order_id: str
     checkout_url: str
     demo_mode: bool = False
+    photo_job_id: str | None = None
+    email: str | None = None
 
 
 class OrderResponse(BaseModel):

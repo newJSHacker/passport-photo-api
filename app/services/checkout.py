@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 import uuid
 
 import stripe
@@ -146,12 +148,17 @@ async def create_checkout_session(
         await mark_order_paid(session, order)
         success_url = (
             f"{settings.checkout_success_url.rstrip('/')}"
-            f"?order_id={order.id}&demo=1"
+            f"?order_id={order.id}"
+            f"&job_id={photo_job_id}"
+            f"&email={quote(email.strip())}"
+            f"&demo=1"
         )
         return CreateCheckoutSessionResponse(
             order_id=order.id,
             checkout_url=success_url,
             demo_mode=True,
+            photo_job_id=photo_job_id,
+            email=email.strip(),
         )
 
     stripe.api_key = settings.stripe_secret_key
@@ -211,6 +218,18 @@ def order_to_response(order: OrderDB) -> OrderResponse:
         paid_at=paid_at,
         download_url=download_url,
     )
+
+
+async def get_order_by_job_response(
+    session: AsyncSession,
+    photo_job_id: str,
+) -> OrderResponse:
+    from app.services.orders import get_paid_order_for_job
+
+    order = await get_paid_order_for_job(session, photo_job_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return order_to_response(order)
 
 
 async def get_order_response(
