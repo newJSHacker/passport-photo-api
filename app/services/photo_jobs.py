@@ -12,6 +12,7 @@ from app.db import PhotoJobDB
 from app.models.schemas import JobStatus, PhotoJobResponse
 from app.services.documents_db import get_document
 from app.services.photo_processor import process_photo_for_document
+from app.services.watermark import apply_preview_watermark
 
 
 async def create_photo_job(session: AsyncSession, document_id: str) -> PhotoJobDB:
@@ -108,7 +109,9 @@ async def process_photo(session: AsyncSession, job_id: str) -> PhotoJobDB:
 
         dpi = (document.dimensions.dpi, document.dimensions.dpi)
         processed.save(processed_path, format="JPEG", quality=95, dpi=dpi)
-        processed.save(preview_path, format="JPEG", quality=85, dpi=dpi)
+
+        preview = apply_preview_watermark(processed.copy())
+        preview.save(preview_path, format="JPEG", quality=85, dpi=dpi)
 
         job.processed_path = str(processed_path)
         job.preview_path = str(preview_path)

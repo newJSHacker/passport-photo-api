@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     storage_path: str = "storage"
     max_upload_mb: int = 10
     background_remover: str = "modnet"
+    watermark_enabled: bool = True
+    watermark_text: str = "Passport-Photo.online"
     database_url: str = (
         "postgresql+asyncpg://passport:passport@127.0.0.1:5432/passport_photo"
     )
