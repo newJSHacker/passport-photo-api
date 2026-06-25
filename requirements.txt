@@ -8,6 +8,7 @@ aiofiles==24.1.0
 httpx==0.28.1
 mediapipe==0.10.21
 opencv-python-headless==4.11.0.86
+onnxruntime==1.20.1
 numpy>=1.26.0,<2
 sqlalchemy==2.0.41
 asyncpg==0.30.0

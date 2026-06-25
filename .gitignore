@@ -27,5 +27,8 @@ build/
 uploads/
 storage/
 
+# Large ML model (run scripts/download_modnet.py)
+app/data/modnet.onnx
+
 # Logs
 *.log

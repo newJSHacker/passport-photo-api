@@ -23,12 +23,10 @@ def smart_crop_to_document(
 
     scaled_face = _scale_face_metrics(face, scale)
 
-    eye_y_from_bottom = out_h - scaled_face.eye_center_y
-    target_eye_from_bottom = out_h * (rules.eye_line_from_bottom_pct / 100.0)
-    shift_y = int(round(eye_y_from_bottom - target_eye_from_bottom))
-
+    # Place eyes at the document's target line (measured from the bottom).
+    target_eye_y_from_top = out_h * (1.0 - rules.eye_line_from_bottom_pct / 100.0)
+    crop_top = int(round(scaled_face.eye_center_y - target_eye_y_from_top))
     crop_left = int(round(scaled_face.eye_center_x - out_w / 2))
-    crop_top = shift_y
 
     canvas = Image.new("RGB", (out_w, out_h), _hex_to_rgb(document.background_color))
     canvas.paste(

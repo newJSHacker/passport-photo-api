@@ -1,6 +1,16 @@
+import logging
+
 import mediapipe as mp
 import numpy as np
 from PIL import Image
+
+from app.config import settings
+from app.services.modnet_background import (
+    modnet_model_available,
+    replace_background_modnet,
+)
+
+logger = logging.getLogger(__name__)
 
 _selfie_segmentation = mp.solutions.selfie_segmentation.SelfieSegmentation(
     model_selection=1,
@@ -14,7 +24,7 @@ def _hex_to_rgb(color: str) -> tuple[int, int, int]:
     return tuple(int(value[i : i + 2], 16) for i in (0, 2, 4))
 
 
-def replace_background(image: Image.Image, background_color: str) -> Image.Image:
+def _replace_background_mediapipe(image: Image.Image, background_color: str) -> Image.Image:
     rgb = np.array(image.convert("RGB"))
     results = _selfie_segmentation.process(rgb)
     mask = results.segmentation_mask
@@ -22,7 +32,6 @@ def replace_background(image: Image.Image, background_color: str) -> Image.Image
     if mask is None:
         return image.convert("RGB")
 
-    # Feather mask edges for a cleaner cutout.
     mask = np.clip(mask, 0.0, 1.0)
     mask = np.stack([mask, mask, mask], axis=-1)
 
@@ -30,3 +39,20 @@ def replace_background(image: Image.Image, background_color: str) -> Image.Image
     foreground = rgb.astype(np.float32)
     composited = foreground * mask + bg * (1.0 - mask)
     return Image.fromarray(np.uint8(np.clip(composited, 0, 255)))
+
+
+def replace_background(image: Image.Image, background_color: str) -> Image.Image:
+    engine = settings.background_remover.lower()
+
+    if engine == "modnet" and modnet_model_available():
+        try:
+            return replace_background_modnet(image, background_color)
+        except Exception:
+            logger.exception("MODNet background removal failed; falling back to MediaPipe")
+
+    if engine == "modnet" and not modnet_model_available():
+        logger.warning(
+            "MODNet model missing at services/api/app/data/modnet.onnx; using MediaPipe"
+        )
+
+    return _replace_background_mediapipe(image, background_color)

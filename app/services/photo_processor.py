@@ -16,6 +16,8 @@ def process_photo_for_document(
     """
     face = detect_face_with_fallback(image)
     bg_removed = replace_background(image, document.background_color)
+    # Re-detect on the cleaned image so landmarks match what we crop.
+    face = detect_face_with_fallback(bg_removed)
     cropped, cropped_face = smart_crop_to_document(bg_removed, face, document)
     validation = validate_processed_photo(cropped, cropped_face, document)
     return cropped, validation
