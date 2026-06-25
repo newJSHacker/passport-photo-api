@@ -37,6 +37,8 @@ async def create_checkout_session_endpoint(
         delivery_type=body.delivery_type,
         print_copies=body.print_copies,
         addons=body.addons,
+        success_url=body.success_url,
+        cancel_url=body.cancel_url,
     )
 
 

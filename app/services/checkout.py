@@ -1,4 +1,4 @@
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 import uuid
 
@@ -108,6 +108,30 @@ def _build_stripe_line_items(
     return items
 
 
+def _resolve_checkout_return_url(url: str | None, fallback: str) -> str:
+    target = (url or fallback).strip().rstrip("/")
+    parsed = urlparse(target)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise HTTPException(status_code=400, detail="Invalid checkout return URL")
+
+    origin = f"{parsed.scheme}://{parsed.netloc}"
+    allowed = {origin.strip().rstrip("/") for origin in settings.cors_origin_list}
+    if origin not in allowed:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Checkout return URL origin not allowed: {origin}. "
+                "Add it to CORS_ORIGINS on the API."
+            ),
+        )
+
+    path = parsed.path.rstrip("/")
+    if path not in {"/checkout/success", "/checkout/cancel"}:
+        raise HTTPException(status_code=400, detail="Invalid checkout return path")
+
+    return f"{origin}{path}"
+
+
 async def create_checkout_session(
     session: AsyncSession,
     *,
@@ -116,6 +140,8 @@ async def create_checkout_session(
     delivery_type: str,
     print_copies: int | None = None,
     addons: list[str] | None = None,
+    success_url: str | None = None,
+    cancel_url: str | None = None,
 ) -> CreateCheckoutSessionResponse:
     job = await session.get(PhotoJobDB, photo_job_id)
     if not job:
@@ -143,11 +169,20 @@ async def create_checkout_session(
     await session.commit()
     await session.refresh(order)
 
+    resolved_success_url = _resolve_checkout_return_url(
+        success_url,
+        settings.checkout_success_url,
+    )
+    resolved_cancel_url = _resolve_checkout_return_url(
+        cancel_url,
+        settings.checkout_cancel_url,
+    )
+
     use_stripe = settings.stripe_enabled and not settings.checkout_demo_mode
     if not use_stripe:
         await mark_order_paid(session, order)
         success_url = (
-            f"{settings.checkout_success_url.rstrip('/')}"
+            f"{resolved_success_url}"
             f"?order_id={order.id}"
             f"&job_id={photo_job_id}"
             f"&email={quote(email.strip())}"
@@ -172,11 +207,11 @@ async def create_checkout_session(
             selected_addons,
         ),
         success_url=(
-            f"{settings.checkout_success_url.rstrip('/')}"
+            f"{resolved_success_url}"
             "?session_id={CHECKOUT_SESSION_ID}"
         ),
         cancel_url=(
-            f"{settings.checkout_cancel_url.rstrip('/')}"
+            f"{resolved_cancel_url}"
             f"?job_id={photo_job_id}"
         ),
         metadata={

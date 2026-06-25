@@ -87,6 +87,8 @@ class CreateCheckoutSessionRequest(BaseModel):
     delivery_type: Literal["digital", "print"]
     print_copies: Literal[2, 4, 6] | None = None
     addons: list[Literal["expert_check", "photo_retouching"]] = Field(default_factory=list)
+    success_url: str | None = None
+    cancel_url: str | None = None
 
 
 class CreateCheckoutSessionResponse(BaseModel):
